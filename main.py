@@ -1,52 +1,51 @@
 import os
 from PIL import Image
 from tkinter import filedialog
+from typing import Optional
+
+ASCII_TABLE = ['@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', '.']
+PIXEL_VALUE_DIVIDER = 25
 
 def main():
     filepath = select_file()
 
-    if filepath is not None:
-        image = Image.open(filepath)
-        image = resize(image)
-        image = greyscale(image)
-    
-        # greyscaling makes the pixels have a value between 0 (black) to 255 (white), dividing by 25 makes it 0-10.
-        # making it equal to the lowest (0) and highest (10) array index for the ascii table.
-        ascii_table = ['@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', '.']
-        pixel_value_divider = 25
+    if filepath:
+        try:
+            image = Image.open(filepath)
+            image = resize(image)
+            image = greyscale(image)
+            ascii_art = convert_to_ascii(image)
+            save_ascii_art(ascii_art)
+            os.startfile('ascii_art.txt')
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
-        ascii_art_str = ''
-
-        for pixel in image.getdata():
-            ascii_art_str += ascii_table[int(pixel / pixel_value_divider)]
-
-        new_width = image.size[0]
-        
-        ascii_art = '\n'.join(
-            [ascii_art_str[i:i+new_width] for i in range(0, len(ascii_art_str), new_width)]
-        )
-
-        save_ascii_art(ascii_art)
-        os.startfile('ascii_art.txt')
-
-def select_file():
+def select_file() -> Optional[str]:
     file_path = filedialog.askopenfilename()
+    return file_path if file_path else None
 
-    if file_path: return file_path
-    else: return None
-
-def resize(image, new_width = 200):
+def resize(image: Image.Image, new_width: int = 200) -> Image.Image:
     old_width, old_height = image.size
     aspect_ratio = old_height / old_width
     new_height = int(aspect_ratio * new_width * 0.55)
-
     return image.resize((new_width, new_height))
 
-def greyscale(image):
+def greyscale(image: Image.Image) -> Image.Image:
     return image.convert("L")
 
-def save_ascii_art(ascii_art):
+def convert_to_ascii(image: Image.Image) -> str:
+    ascii_art_str = ''.join(
+        ASCII_TABLE[int(pixel / PIXEL_VALUE_DIVIDER)] for pixel in image.getdata()
+    )
+    new_width = image.size[0]
+    ascii_art = '\n'.join(
+        [ascii_art_str[i:i+new_width] for i in range(0, len(ascii_art_str), new_width)]
+    )
+    return ascii_art
+
+def save_ascii_art(ascii_art: str) -> None:
     with open('ascii_art.txt', 'w') as file:
         file.write(ascii_art)
 
-main()
+if __name__ == "__main__":
+    main()
